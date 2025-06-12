@@ -1,0 +1,53 @@
+name: Parse and Update README
+on:
+  push:
+    paths:
+      - 'data/input.txt'
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install chardet
+
+      - name: Read and normalize text
+        id: parse
+        run: |
+          #!/usr/bin/env python3
+          import chardet
+          import re
+          # Read raw bytes
+          raw_bytes = open('data/input.txt', 'rb').read()
+          # Detect encoding (e.g., CP932, EUC-JP)
+          detected = chardet.detect(raw_bytes)
+          encoding = detected.get('encoding') or 'utf-8'
+          # Decode with detected encoding
+          raw = raw_bytes.decode(encoding, errors='ignore')
+          # Optional: clean control characters
+          cleaned = re.sub(r"[\x00-\x1F\x7F]+", '', raw)
+          # Write to README.md
+          with open('README.md', 'w', encoding='utf-8') as out:
+              out.write(cleaned)
+          print('## Parsed Text (encoding: {})'.format(encoding))
+          print(cleaned)
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: 'chore: update README with parsed text (fixed encoding)'
+          file_pattern: 'README.md'
+          branch: ${{ github.ref_name }}
+          author_name: 'github-actions[bot]'
+          author_email: 'github-actions[bot]@users.noreply.github.com'
