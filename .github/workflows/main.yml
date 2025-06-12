@@ -19,15 +19,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install chardet
+          python3 -m pip install --upgrade pip
+          python3 -m pip install chardet
 
       - name: Read and normalize text
         id: parse
+        shell: bash
         run: |
-          #!/usr/bin/env python3
-          import chardet
-          import re
+          python3 - << 'EOF'
+          import chardet, re
           # Read raw bytes
           raw_bytes = open('data/input.txt', 'rb').read()
           # Detect encoding (e.g., CP932, EUC-JP)
@@ -40,8 +40,9 @@ jobs:
           # Write to README.md
           with open('README.md', 'w', encoding='utf-8') as out:
               out.write(cleaned)
-          print('## Parsed Text (encoding: {})'.format(encoding))
+          print(f'## Parsed Text (encoding: {encoding})')
           print(cleaned)
+          EOF
 
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v4
