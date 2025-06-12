@@ -3,6 +3,12 @@ on:
   push:
     paths:
       - 'data/input.txt'
+  workflow_dispatch:
+    inputs:
+      input_path:
+        description: 'Path to input text file'
+        default: 'data/input.txt'
+        required: true
 
 jobs:
   update-readme:
@@ -26,18 +32,14 @@ jobs:
         id: parse
         shell: bash
         run: |
+          FILE_PATH="${{ github.event.inputs.input_path || 'data/input.txt' }}"
           python3 - << 'EOF'
           import chardet, re
-          # Read raw bytes
-          raw_bytes = open('data/input.txt', 'rb').read()
-          # Detect encoding (e.g., CP932, EUC-JP)
+          raw_bytes = open(FILE_PATH, 'rb').read()
           detected = chardet.detect(raw_bytes)
           encoding = detected.get('encoding') or 'utf-8'
-          # Decode with detected encoding
           raw = raw_bytes.decode(encoding, errors='ignore')
-          # Optional: clean control characters
           cleaned = re.sub(r"[\x00-\x1F\x7F]+", '', raw)
-          # Write to README.md
           with open('README.md', 'w', encoding='utf-8') as out:
               out.write(cleaned)
           print(f'## Parsed Text (encoding: {encoding})')
@@ -47,7 +49,7 @@ jobs:
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: 'chore: update README with parsed text (fixed encoding)'
+          commit_message: 'chore: update README with parsed text (manual trigger support)'
           file_pattern: 'README.md'
           branch: ${{ github.ref_name }}
           author_name: 'github-actions[bot]'
